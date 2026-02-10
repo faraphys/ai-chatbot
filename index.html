@@ -187,8 +187,7 @@
     function boot(){
       messages = [];
       chatEl.innerHTML = "";
-      const hello = "Hallo! Ich bin Physikus. Stell mir eine Frage zu Naturwissenschaften oder Mathe.\n\n" +
-        "Ich antworte zuerst mit Hinweisen und Fragen – wir finden die Lösung gemeinsam 😊";
+      const hello = "Hallo! Ich bin Physikus. Stell mir eine Frage zu Naturwissenschaften oder Mathe.";
       addMsg("assistant", "Physikus", hello);
       messages.push({ role: "assistant", content: hello });
       qEl.focus();
