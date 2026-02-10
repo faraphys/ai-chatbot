@@ -1,3 +1,133 @@
-<script>
-  const WORKER_URL = "https://ai-chat-app.raphaerber.workers.dev/api/chat";
-</script>
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Gymnasium-Tutor</title>
+  <style>
+    body { font-family: system-ui, Arial, sans-serif; margin: 0; background:#f6f7fb; }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 14px; }
+    .card { background:white; border-radius: 14px; box-shadow: 0 8px 24px rgba(0,0,0,.08); padding: 12px; }
+    .bar { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom: 10px; }
+    select, button, input { font-size: 16px; }
+    #log { height: 62vh; overflow:auto; padding: 10px; background:#fff; border-radius: 14px; border:1px solid rgba(0,0,0,.08); }
+    .msg { margin: 10px 0; }
+    .who { font-weight: 650; margin-bottom: 4px; }
+    .bubble {
+      display: inline-block;
+      padding: 10px 12px;
+      border-radius: 12px;
+      max-width: 900px;
+      white-space: pre-wrap;
+      border: 1px solid rgba(0,0,0,.08);
+    }
+    .me .bubble { background: #eef6ff; }
+    .bot .bubble { background: #f7fbf7; }
+    .row { display:flex; gap:10px; margin-top: 10px; }
+    #q { flex:1; padding: 10px 12px; border-radius: 12px; border:1px solid rgba(0,0,0,0.2); }
+    #send { padding: 10px 14px; border-radius: 12px; border: none; background:#2b8cff; color:white; cursor:pointer; }
+    #send:disabled { opacity:.6; cursor: default; }
+    .hint { color:#465; font-size: 12px; margin-top: 8px; }
+    .small { font-size: 13px; color:#234; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="bar">
+        <strong>Gymnasium-Tutor (Physik/Mathe/Nawi)</strong>
+
+        <label class="small">Klasse:
+          <select id="grade">
+            <option>8</option><option>9</option><option selected>10</option><option>11</option><option>12</option>
+          </select>
+        </label>
+
+        <label class="small">Fach:
+          <select id="subject">
+            <option selected>Physik</option>
+            <option>Mathematik</option>
+            <option>Chemie</option>
+            <option>Biologie</option>
+            <option>Naturwissenschaften</option>
+          </select>
+        </label>
+      </div>
+
+      <div id="log"></div>
+
+      <div class="row">
+        <input id="q" placeholder="Frage stellen … (z.B. Impuls, Energie, Ableitung, …)" />
+        <button id="send">Senden</button>
+      </div>
+
+      <div class="hint">
+        Tipp: kurz & konkret fragen spart Kontingent. (Antworten sind standardmässig kompakt.)
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Dein Cloudflare Worker Endpoint:
+    const WORKER_URL = "https://ai-chat-app.raphaerber.workers.dev/api/chat";
+
+    const log = document.getElementById("log");
+    const q = document.getElementById("q");
+    const send = document.getElementById("send");
+    const grade = document.getElementById("grade");
+    const subject = document.getElementById("subject");
+
+    function escapeHtml(s){
+      return String(s).replace(/[&<>"']/g, m => ({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+      }[m]));
+    }
+
+    function addMsg(kind, who, text) {
+      const div = document.createElement("div");
+      div.className = "msg " + kind;
+      div.innerHTML = `
+        <div class="who">${escapeHtml(who)}</div>
+        <div class="bubble">${escapeHtml(text)}</div>
+      `;
+      log.appendChild(div);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    async function ask() {
+      const message = q.value.trim();
+      if (!message) return;
+
+      q.value = "";
+      addMsg("me", "Du", message);
+      send.disabled = true;
+
+      try {
+        const res = await fetch(WORKER_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message,
+            grade: Number(grade.value),
+            subject: subject.value
+          })
+        });
+
+        const data = await res.json();
+        addMsg("bot", "Bot", data.reply || "Keine Antwort erhalten.");
+      } catch (e) {
+        addMsg("bot", "Bot", "Fehler beim Verbinden (Worker/CORS).");
+      } finally {
+        send.disabled = false;
+        q.focus();
+      }
+    }
+
+    send.addEventListener("click", ask);
+    q.addEventListener("keydown", (e) => { if (e.key === "Enter") ask(); });
+
+    addMsg("bot", "Bot", "Hallo! Stell mir eine Frage zu Physik/Mathe/Nawi. Ich antworte passend zur gewählten Klasse.");
+  </script>
+</body>
+</html>
+
