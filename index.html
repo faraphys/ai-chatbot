@@ -5,19 +5,10 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Physikus</title>
 
-  <!-- MathJax (renders \( ... \) inline LaTeX) -->
-  <script>
-    window.MathJax = {
-      tex: {
-        inlineMath: [['\\(', '\\)'], ['$', '$']],
-        displayMath: [['\\[', '\\]']]
-      },
-      options: {
-        skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
-      }
-    };
-  </script>
-  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <!-- KaTeX (fast) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
 
   <style>
     :root{
@@ -31,6 +22,9 @@
       --stroke:rgba(0,0,0,.10);
       --shadow: 0 10px 28px rgba(0,0,0,.10);
       --radius: 16px;
+
+      --copyBg: rgba(255,255,255,.72);
+      --copyStroke: rgba(0,0,0,.12);
     }
 
     html, body { height: 100%; }
@@ -91,6 +85,7 @@
     .who{ font-weight: 700; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
 
     .bubble{
+      position: relative; /* for copy buttons */
       display:inline-block;
       padding: 10px 12px;
       border-radius: 14px;
@@ -147,17 +142,15 @@
       padding: 2px 0 0 2px;
       user-select: none;
     }
-    /* reserve width so it doesn't change */
     .thinkingDots{
       display:inline-block;
-      width: 3ch;            /* space for "..." */
+      width: 3ch;
       text-align: left;
     }
     .thinkingDots::before{
       content:"...";
       animation: pulse 1.1s ease-in-out infinite;
     }
-    /* slower after 5s */
     .thinkingDots.slow::before{
       animation-duration: 2.0s;
     }
@@ -165,6 +158,69 @@
       0%, 100% { opacity: 0.25; }
       50%      { opacity: 0.95; }
     }
+
+    /* ===== KaTeX typography blending ===== */
+    /* Make math color + size blend with text better */
+    .bubble .katex{
+      font-size: 1.02em; /* slightly larger for legibility but close to text */
+      color: inherit;
+    }
+    .bubble .katex-display{
+      margin: .45em 0 .35em 0; /* tighter spacing */
+    }
+    .bubble .katex-display > .katex{
+      font-size: 1.08em; /* display a bit larger */
+    }
+
+    /* ===== Copy LaTeX buttons ===== */
+    .copyBtn{
+      position:absolute;
+      top: 8px;
+      right: 8px;
+      z-index: 3;
+
+      border: 1px solid var(--copyStroke);
+      background: var(--copyBg);
+      backdrop-filter: blur(4px);
+      border-radius: 10px;
+      padding: 6px 8px;
+      cursor: pointer;
+      font-size: 12px;
+      line-height: 1;
+      color: var(--ink);
+      opacity: .0;
+      transform: translateY(-2px);
+      transition: opacity .15s ease, transform .15s ease;
+      user-select: none;
+    }
+    .bubble:hover .copyBtn{
+      opacity: .95;
+      transform: translateY(0);
+    }
+    .copyBtn:active{ transform: translateY(0) scale(.98); }
+
+    /* Copy button for each display equation */
+    .eqWrap{
+      position: relative;
+    }
+    .eqCopy{
+      position:absolute;
+      top: 6px;
+      right: 6px;
+      border: 1px solid var(--copyStroke);
+      background: var(--copyBg);
+      backdrop-filter: blur(4px);
+      border-radius: 10px;
+      padding: 6px 8px;
+      cursor: pointer;
+      font-size: 12px;
+      line-height: 1;
+      color: var(--ink);
+      opacity: 0;
+      transition: opacity .15s ease;
+      user-select:none;
+    }
+    .eqWrap:hover .eqCopy{ opacity: .95; }
   </style>
 </head>
 
@@ -203,20 +259,166 @@
       }[m]));
     }
 
+    function copyToClipboard(text){
+      const t = String(text || "");
+      if (!t) return;
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(t).catch(() => {});
+        return;
+      }
+      // fallback
+      const ta = document.createElement("textarea");
+      ta.value = t;
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
+      document.body.appendChild(ta);
+      ta.select();
+      try{ document.execCommand("copy"); }catch(e){}
+      document.body.removeChild(ta);
+    }
+
+    // --- KaTeX render ---
+    function renderMathIn(el){
+      // Wait until KaTeX scripts loaded
+      if (!window.renderMathInElement) return;
+
+      // KaTeX auto-render:
+      // supports \( \), \[ \], $$ $$, and $ $
+      renderMathInElement(el, {
+        delimiters: [
+          { left: "$$", right: "$$", display: true },
+          { left: "\\[", right: "\\]", display: true },
+          { left: "\\(", right: "\\)", display: false },
+          { left: "$", right: "$", display: false }
+        ],
+        throwOnError: false
+      });
+
+      // Add per-display-equation copy buttons (copy the original TeX inside $$ $$)
+      addEquationCopyButtons(el);
+    }
+
+    function addEquationCopyButtons(container){
+      // KaTeX output uses .katex-display for display equations
+      const displays = container.querySelectorAll(".katex-display");
+      displays.forEach(d => {
+        // Avoid adding twice
+        if (d.closest(".eqWrap")) return;
+
+        const wrap = document.createElement("div");
+        wrap.className = "eqWrap";
+
+        // Move the display into wrap
+        d.parentNode.insertBefore(wrap, d);
+        wrap.appendChild(d);
+
+        const btn = document.createElement("button");
+        btn.className = "eqCopy";
+        btn.type = "button";
+        btn.textContent = "Copy TeX";
+
+        // We can’t recover the exact original delimiters after rendering reliably,
+        // so we store the raw text BEFORE rendering in data attributes.
+        // We'll set this later from pre-render data if available.
+        const raw = d.getAttribute("data-raw-tex") || "";
+        btn.addEventListener("click", () => copyToClipboard(raw));
+
+        wrap.appendChild(btn);
+      });
+    }
+
+    // Before KaTeX renders, we snapshot raw $$...$$ segments and attach to the soon-to-be .katex-display via placeholders.
+    // Approach: replace each $$...$$ with a placeholder span that stores the TeX. KaTeX will replace it with .katex-display.
+    function markDisplayTexBeforeRender(bubbleEl, rawText){
+      // Find $$...$$ blocks in rawText and insert marker spans into DOM before render
+      // We do it by setting bubbleEl.innerHTML to escaped + markers (no LaTeX executed yet)
+      // Then KaTeX renders markers into display math; we copy raw TeX from marker to resulting .katex-display.
+
+      const parts = [];
+      let i = 0;
+      const re = /\$\$([\s\S]*?)\$\$/g;
+      let m;
+      while ((m = re.exec(rawText)) !== null) {
+        const start = m.index;
+        const end = re.lastIndex;
+        parts.push({ type:"text", value: rawText.slice(i, start) });
+        parts.push({ type:"disp", value: m[1].trim() });
+        i = end;
+      }
+      parts.push({ type:"text", value: rawText.slice(i) });
+
+      // Build HTML with safe escaping, but keep $$...$$ in the string so KaTeX can render it.
+      // Also insert hidden markers for each display block.
+      let html = "";
+      for (const p of parts) {
+        if (p.type === "text") {
+          html += escapeHtml(p.value);
+        } else {
+          // Insert the actual $$...$$ for KaTeX to render, plus a hidden marker.
+          // marker carries raw tex for copy button.
+          const tex = p.value;
+          html += `$$${escapeHtml(tex)}$$<span class="__texMarker" data-tex="${escapeHtml(tex)}" style="display:none"></span>`;
+        }
+      }
+      bubbleEl.innerHTML = html;
+    }
+
+    function attachRawTexToDisplays(bubbleEl){
+      // After KaTeX render, map markers to .katex-display order
+      const markers = [...bubbleEl.querySelectorAll(".__texMarker")];
+      const displays = [...bubbleEl.querySelectorAll(".katex-display")];
+
+      const n = Math.min(markers.length, displays.length);
+      for (let i = 0; i < n; i++) {
+        const tex = markers[i].getAttribute("data-tex") || "";
+        displays[i].setAttribute("data-raw-tex", tex);
+      }
+      markers.forEach(m => m.remove());
+    }
+
     function addMsg(role, who, text){
-      const div = document.createElement("div");
-      div.className = "msg " + (role === "user" ? "me" : "bot");
-      div.innerHTML = `
-        <div class="who">${escapeHtml(who)}</div>
-        <div class="bubble">${escapeHtml(text)}</div>
-      `;
-      chatEl.appendChild(div);
+      const msg = document.createElement("div");
+      msg.className = "msg " + (role === "user" ? "me" : "bot");
+
+      const whoEl = document.createElement("div");
+      whoEl.className = "who";
+      whoEl.textContent = who;
+
+      const bubble = document.createElement("div");
+      bubble.className = "bubble";
+
+      // Copy button copies raw text (including TeX)
+      const copyBtn = document.createElement("button");
+      copyBtn.className = "copyBtn";
+      copyBtn.type = "button";
+      copyBtn.textContent = "Copy";
+      copyBtn.addEventListener("click", () => copyToClipboard(text));
+
+      bubble.appendChild(copyBtn);
+
+      // Insert content with marker handling so we can add per-equation copy later
+      markDisplayTexBeforeRender(bubble, text);
+
+      msg.appendChild(whoEl);
+      msg.appendChild(bubble);
+
+      chatEl.appendChild(msg);
       chatEl.scrollTop = chatEl.scrollHeight;
 
-      // Render MathJax after insertion
-      if (window.MathJax && window.MathJax.typesetPromise) {
-        MathJax.typesetPromise([div]).catch(() => {});
-      }
+      // Render KaTeX once available (defer scripts)
+      const tryRender = () => {
+        if (!window.renderMathInElement) {
+          requestAnimationFrame(tryRender);
+          return;
+        }
+        renderMathIn(bubble);
+        attachRawTexToDisplays(bubble);
+        // Re-run to bind raw tex copy buttons now that data-raw-tex exists
+        renderMathIn(bubble); // idempotent enough with existing spans removed
+        addEquationCopyButtons(bubble);
+      };
+      tryRender();
     }
 
     function addThinkingLine(){
@@ -303,7 +505,6 @@
     sendEl.addEventListener("click", ask);
     resetEl.addEventListener("click", boot);
 
-    // Auto reset on load
     window.addEventListener("load", boot);
   </script>
 </body>
