@@ -36,6 +36,7 @@ body{
 .topbar{
   display:flex;
   justify-content:space-between;
+  align-items:center;
   padding:10px 12px;
   background:var(--card);
   border-bottom:1px solid var(--stroke);
@@ -82,6 +83,7 @@ body{
   border-radius:14px;
   border:1px solid rgba(0,0,0,.06);
   white-space:pre-wrap;
+  line-height:1.35;
   max-width:980px;
 }
 
@@ -98,6 +100,7 @@ textarea.input{
   resize:none;
   font-size:16px;
   min-height:44px;
+  line-height:1.35;
 }
 
 .send{
@@ -109,14 +112,31 @@ textarea.input{
   cursor:pointer;
 }
 
-/* ---------- Thinking dots ---------- */
+.send:disabled{opacity:.65}
 
-.thinkingDots::after{
+/* ---------- Thinking indicator (no jitter, no tall box) ---------- */
+/* Make the "thinking" bubble visually lighter and same line-height as others */
+.bubble.thinking{
+  padding:10px 12px;          /* same as normal bubble */
+  opacity:0.85;
+}
+
+/* Reserve fixed width for the dots so the bubble width does NOT change */
+.dotsSlot{
+  display:inline-block;
+  width:3ch;                  /* reserve space for "..." */
+  text-align:left;
+  vertical-align:baseline;
+}
+
+/* Animate dots inside a fixed-width slot (no layout change) */
+.dotsSlot::before{
   content:"";
   animation:dots 1.2s steps(4,end) infinite;
 }
 
-.thinkingDots.slow::after{
+/* Slower after 5s */
+.dotsSlot.slow::before{
   animation-duration:2.2s;
 }
 
@@ -132,25 +152,24 @@ textarea.input{
 <body>
 <div class="wrap">
 
-<div class="topbar">
-  <div><b>Physikus</b></div>
-  <button id="reset" class="btn">Zurücksetzen</button>
-</div>
+  <div class="topbar">
+    <div><b>Physikus</b></div>
+    <button id="reset" class="btn">Zurücksetzen</button>
+  </div>
 
-<div class="panel">
+  <div class="panel">
+    <div id="chat" class="chat" aria-live="polite"></div>
 
-<div id="chat" class="chat"></div>
+    <div class="composer">
+      <textarea id="q" class="input" placeholder="Frage stellen…"></textarea>
+      <button id="send" class="send">Senden</button>
+    </div>
 
-<div class="composer">
-  <textarea id="q" class="input" placeholder="Frage stellen…"></textarea>
-  <button id="send" class="send">Senden</button>
-</div>
+    <div style="font-size:12px;color:var(--muted)">
+      Enter = Senden · Shift+Enter = neue Zeile
+    </div>
+  </div>
 
-<div style="font-size:12px;color:var(--muted)">
-  Enter = Senden · Shift+Enter = neue Zeile
-</div>
-
-</div>
 </div>
 
 <script>
@@ -163,20 +182,34 @@ const resetEl=document.getElementById("reset");
 
 let messages=[];
 
-function addMsg(role,who,text){
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, m => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[m]));
+}
+
+function addMsg(role,who,text,opts={}){
   const div=document.createElement("div");
   div.className="msg "+(role==="user"?"me":"bot");
-  div.innerHTML=`<div class="who">${who}</div><div class="bubble">${text}</div>`;
+
+  const bubbleClass = opts.thinking ? "bubble thinking" : "bubble";
+
+  div.innerHTML=
+    `<div class="who">${escapeHtml(who)}</div>`+
+    `<div class="${bubbleClass}">${escapeHtml(text)}</div>`;
+
   chatEl.appendChild(div);
   chatEl.scrollTop=chatEl.scrollHeight;
+  return div;
 }
 
 function boot(){
   messages=[];
   chatEl.innerHTML="";
-  const hello="Wie kann ich dir weiterhelfen?";
+  const hello="Hallo! Ich bin Physikus.";
   addMsg("assistant","Physikus",hello);
   messages.push({role:"assistant",content:hello});
+  qEl.value="";
   qEl.focus();
 }
 
@@ -191,30 +224,27 @@ async function ask(){
   const payload={messages:messages.slice(-12)};
   sendEl.disabled=true;
 
-  let thinkingDiv=null;
-  let showThinking=false;
+  let thinkingMsgDiv=null;
+  let dotsEl=null;
 
-  // --- only show thinking if response takes longer than 500ms ---
+  // Only show thinking after 500ms to avoid flicker
   const thinkingTimer=setTimeout(()=>{
-    showThinking=true;
-
-    thinkingDiv=document.createElement("div");
-    thinkingDiv.className="msg bot";
-    thinkingDiv.innerHTML=`
+    thinkingMsgDiv=document.createElement("div");
+    thinkingMsgDiv.className="msg bot";
+    thinkingMsgDiv.innerHTML = `
       <div class="who">Physikus</div>
-      <div class="bubble">
-        ⏳ Ich überlege kurz<span class="thinkingDots"></span>
+      <div class="bubble thinking">
+        ⏳ Ich überlege kurz<span class="dotsSlot"></span>
       </div>
     `;
-    chatEl.appendChild(thinkingDiv);
+    chatEl.appendChild(thinkingMsgDiv);
     chatEl.scrollTop=chatEl.scrollHeight;
 
-    // --- slow animation after 5s ---
+    dotsEl = thinkingMsgDiv.querySelector(".dotsSlot");
+
+    // Slow dots after 5s (if still waiting)
     setTimeout(()=>{
-      if(thinkingDiv){
-        const dots=thinkingDiv.querySelector(".thinkingDots");
-        if(dots) dots.classList.add("slow");
-      }
+      if(dotsEl) dotsEl.classList.add("slow");
     },5000);
 
   },500);
@@ -227,25 +257,25 @@ async function ask(){
     });
 
     const data=await res.json();
-    const reply=data?.reply||"Keine Antwort erhalten.";
+    const reply=(data && data.reply) ? data.reply : "Keine Antwort erhalten.";
 
     clearTimeout(thinkingTimer);
-    if(thinkingDiv) thinkingDiv.remove();
+    if(thinkingMsgDiv) thinkingMsgDiv.remove();
 
     addMsg("assistant","Physikus",reply);
     messages.push({role:"assistant",content:reply});
 
   }catch{
     clearTimeout(thinkingTimer);
-    if(thinkingDiv) thinkingDiv.remove();
+    if(thinkingMsgDiv) thinkingMsgDiv.remove();
     addMsg("assistant","Physikus","Fehler beim Verbinden.");
+  }finally{
+    sendEl.disabled=false;
+    qEl.focus();
   }
-
-  sendEl.disabled=false;
-  qEl.focus();
 }
 
-/* --- Enter send / Shift+Enter newline --- */
+// Enter = send, Shift+Enter = newline
 qEl.addEventListener("keydown",(e)=>{
   if(e.key==="Enter" && !e.shiftKey){
     e.preventDefault();
@@ -253,9 +283,9 @@ qEl.addEventListener("keydown",(e)=>{
   }
 });
 
-sendEl.onclick=ask;
-resetEl.onclick=boot;
-window.onload=boot;
+sendEl.addEventListener("click",ask);
+resetEl.addEventListener("click",boot);
+window.addEventListener("load",boot);
 </script>
 
 </body>
