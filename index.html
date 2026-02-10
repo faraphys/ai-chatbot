@@ -1,245 +1,262 @@
 <!doctype html>
 <html lang="de">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Physikus</title>
-  <style>
-    :root{
-      --bg:#f4f6fb;
-      --card:#ffffff;
-      --ink:#0a2a43;
-      --muted:#5b6a78;
-      --accent:#2b8cff;
-      --bubbleMe:#eef6ff;
-      --bubbleBot:#f7fbf7;
-      --stroke:rgba(0,0,0,.10);
-      --shadow: 0 10px 28px rgba(0,0,0,.10);
-      --radius: 16px;
-    }
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Physikus</title>
 
-    html, body { height: 100%; }
-    body{
-      margin:0;
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background: var(--bg);
-      color: var(--ink);
-    }
+<style>
+:root{
+  --bg:#f4f6fb;
+  --card:#ffffff;
+  --ink:#0a2a43;
+  --muted:#5b6a78;
+  --accent:#2b8cff;
+  --bubbleMe:#eef6ff;
+  --bubbleBot:#f7fbf7;
+  --stroke:rgba(0,0,0,.10);
+  --shadow:0 10px 28px rgba(0,0,0,.10);
+  --radius:16px;
+}
 
-    .wrap{
-      height: 100vh;
-      display:flex;
-      flex-direction:column;
-    }
+html,body{height:100%}
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+  background:var(--bg);
+  color:var(--ink);
+}
 
-    .topbar{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:10px;
-      padding: 10px 12px;
-      background: var(--card);
-      border-bottom: 1px solid var(--stroke);
-    }
+.wrap{
+  height:100vh;
+  display:flex;
+  flex-direction:column;
+}
 
-    .brand .title{ font-weight: 800; }
+.topbar{
+  display:flex;
+  justify-content:space-between;
+  padding:10px 12px;
+  background:var(--card);
+  border-bottom:1px solid var(--stroke);
+}
 
-    .btn{
-      border: 1px solid var(--stroke);
-      background: #fff;
-      border-radius: 12px;
-      padding: 8px 10px;
-      cursor:pointer;
-      font-size: 14px;
-    }
+.btn{
+  border:1px solid var(--stroke);
+  background:#fff;
+  border-radius:12px;
+  padding:8px 10px;
+  cursor:pointer;
+}
 
-    .panel{
-      flex:1;
-      display:flex;
-      flex-direction:column;
-      padding: 10px 12px;
-      gap:10px;
-      min-height:0;
-    }
+.panel{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  padding:10px 12px;
+  gap:10px;
+  min-height:0;
+}
 
-    .chat{
-      flex:1;
-      background: var(--card);
-      border: 1px solid var(--stroke);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 10px;
-      overflow:auto;
-      min-height:0;
-    }
+.chat{
+  flex:1;
+  background:var(--card);
+  border:1px solid var(--stroke);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:10px;
+  overflow:auto;
+}
 
-    .msg{ margin: 10px 0; }
-    .who{ font-weight:700; font-size:12px; color:var(--muted); margin-bottom:4px; }
-    .bubble{
-      display:inline-block;
-      padding:10px 12px;
-      border-radius:14px;
-      border:1px solid rgba(0,0,0,.06);
-      white-space:pre-wrap;
-      line-height:1.35;
-      max-width:980px;
-    }
-    .me .bubble{ background:var(--bubbleMe); }
-    .bot .bubble{ background:var(--bubbleBot); }
+.msg{margin:10px 0}
+.who{
+  font-weight:700;
+  font-size:12px;
+  color:var(--muted);
+  margin-bottom:4px;
+}
 
-    .composer{
-      display:flex;
-      gap:10px;
-    }
+.bubble{
+  display:inline-block;
+  padding:10px 12px;
+  border-radius:14px;
+  border:1px solid rgba(0,0,0,.06);
+  white-space:pre-wrap;
+  max-width:980px;
+}
 
-    textarea.input{
-      flex:1;
-      background:var(--card);
-      border:1px solid var(--stroke);
-      border-radius:14px;
-      padding:10px 12px;
-      font-size:16px;
-      resize:none;
-      outline:none;
-      min-height:44px;
-      line-height:1.35;
-    }
+.me .bubble{background:var(--bubbleMe)}
+.bot .bubble{background:var(--bubbleBot)}
 
-    .send{
-      border:none;
-      background:var(--accent);
-      color:#fff;
-      border-radius:14px;
-      padding:10px 14px;
-      cursor:pointer;
-      font-size:16px;
-      min-width:110px;
-    }
-    .send:disabled{ opacity:.65; }
+.composer{display:flex;gap:10px}
 
-    .hint{
-      font-size:12px;
-      color:var(--muted);
-    }
-  </style>
+textarea.input{
+  flex:1;
+  border:1px solid var(--stroke);
+  border-radius:14px;
+  padding:10px;
+  resize:none;
+  font-size:16px;
+  min-height:44px;
+}
+
+.send{
+  border:none;
+  background:var(--accent);
+  color:white;
+  border-radius:14px;
+  padding:10px 14px;
+  cursor:pointer;
+}
+
+/* ---------- Thinking dots ---------- */
+
+.thinkingDots::after{
+  content:"";
+  animation:dots 1.2s steps(4,end) infinite;
+}
+
+.thinkingDots.slow::after{
+  animation-duration:2.2s;
+}
+
+@keyframes dots{
+  0%{content:""}
+  25%{content:"."}
+  50%{content:".."}
+  75%{content:"..."}
+}
+</style>
 </head>
+
 <body>
-  <div class="wrap">
-    <div class="topbar">
-      <div class="brand">
-        <div class="title">Physikus</div>
+<div class="wrap">
+
+<div class="topbar">
+  <div><b>Physikus</b></div>
+  <button id="reset" class="btn">Zurücksetzen</button>
+</div>
+
+<div class="panel">
+
+<div id="chat" class="chat"></div>
+
+<div class="composer">
+  <textarea id="q" class="input" placeholder="Frage stellen…"></textarea>
+  <button id="send" class="send">Senden</button>
+</div>
+
+<div style="font-size:12px;color:var(--muted)">
+  Enter = Senden · Shift+Enter = neue Zeile
+</div>
+
+</div>
+</div>
+
+<script>
+const WORKER_URL="https://ai-chat-app.raphaerber.workers.dev/api/chat";
+
+const chatEl=document.getElementById("chat");
+const qEl=document.getElementById("q");
+const sendEl=document.getElementById("send");
+const resetEl=document.getElementById("reset");
+
+let messages=[];
+
+function addMsg(role,who,text){
+  const div=document.createElement("div");
+  div.className="msg "+(role==="user"?"me":"bot");
+  div.innerHTML=`<div class="who">${who}</div><div class="bubble">${text}</div>`;
+  chatEl.appendChild(div);
+  chatEl.scrollTop=chatEl.scrollHeight;
+}
+
+function boot(){
+  messages=[];
+  chatEl.innerHTML="";
+  const hello="Hallo! Ich bin Physikus. Stell mir eine Frage zu Naturwissenschaften oder Mathe.";
+  addMsg("assistant","Physikus",hello);
+  messages.push({role:"assistant",content:hello});
+  qEl.focus();
+}
+
+async function ask(){
+  const text=qEl.value.trim();
+  if(!text) return;
+
+  qEl.value="";
+  addMsg("user","Du",text);
+  messages.push({role:"user",content:text});
+
+  const payload={messages:messages.slice(-12)};
+  sendEl.disabled=true;
+
+  let thinkingDiv=null;
+  let showThinking=false;
+
+  // --- only show thinking if response takes longer than 500ms ---
+  const thinkingTimer=setTimeout(()=>{
+    showThinking=true;
+
+    thinkingDiv=document.createElement("div");
+    thinkingDiv.className="msg bot";
+    thinkingDiv.innerHTML=`
+      <div class="who">Physikus</div>
+      <div class="bubble">
+        ⏳ Ich überlege kurz<span class="thinkingDots"></span>
       </div>
-      <button id="reset" class="btn">Zurücksetzen</button>
-    </div>
+    `;
+    chatEl.appendChild(thinkingDiv);
+    chatEl.scrollTop=chatEl.scrollHeight;
 
-    <div class="panel">
-      <div id="chat" class="chat" aria-live="polite"></div>
-
-      <div class="composer">
-        <textarea id="q" class="input" placeholder="Frage stellen…"></textarea>
-        <button id="send" class="send">Senden</button>
-      </div>
-
-      <div class="hint">
-        Enter = Senden · Shift+Enter = neue Zeile
-      </div>
-    </div>
-  </div>
-
-  <script>
-    const WORKER_URL = "https://ai-chat-app.raphaerber.workers.dev/api/chat";
-
-    const chatEl = document.getElementById("chat");
-    const qEl = document.getElementById("q");
-    const sendEl = document.getElementById("send");
-    const resetEl = document.getElementById("reset");
-
-    let messages = [];
-
-    function escapeHtml(s){
-      return String(s).replace(/[&<>"']/g, m => ({
-        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-      }[m]));
-    }
-
-    function addMsg(role, who, text){
-      const div = document.createElement("div");
-      div.className = "msg " + (role === "user" ? "me" : "bot");
-      div.innerHTML = `
-        <div class="who">${escapeHtml(who)}</div>
-        <div class="bubble">${escapeHtml(text)}</div>
-      `;
-      chatEl.appendChild(div);
-      chatEl.scrollTop = chatEl.scrollHeight;
-    }
-
-    function boot(){
-      messages = [];
-      chatEl.innerHTML = "";
-      const hello = "Hallo! Ich bin Physikus. Stell mir eine Frage zu Naturwissenschaften oder Mathe.";
-      addMsg("assistant", "Physikus", hello);
-      messages.push({ role: "assistant", content: hello });
-      qEl.value = "";
-      qEl.focus();
-    }
-
-    async function ask(){
-      const text = qEl.value.trim();
-      if (!text) return;
-
-      qEl.value = "";
-      addMsg("user", "Du", text);
-      messages.push({ role: "user", content: text });
-
-      const payload = { messages: messages.slice(-12) };
-      sendEl.disabled = true;
-
-      const thinkingId = "thinking-" + Date.now();
-      const thinkingDiv = document.createElement("div");
-      thinkingDiv.className = "msg bot";
-      thinkingDiv.id = thinkingId;
-      thinkingDiv.innerHTML = `
-        <div class="who">Physikus</div>
-        <div class="bubble">⏳ Ich überlege kurz…</div>
-      `;
-      chatEl.appendChild(thinkingDiv);
-      chatEl.scrollTop = chatEl.scrollHeight;
-
-      try{
-        const res = await fetch(WORKER_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
-        });
-        const data = await res.json();
-        const reply = data?.reply || "Keine Antwort erhalten.";
-
-        document.getElementById(thinkingId)?.remove();
-        addMsg("assistant", "Physikus", reply);
-        messages.push({ role: "assistant", content: reply });
-
-      } catch {
-        document.getElementById(thinkingId)?.remove();
-        addMsg("assistant", "Physikus", "Fehler beim Verbinden (Worker/CORS).");
-      } finally{
-        sendEl.disabled = false;
-        qEl.focus();
+    // --- slow animation after 5s ---
+    setTimeout(()=>{
+      if(thinkingDiv){
+        const dots=thinkingDiv.querySelector(".thinkingDots");
+        if(dots) dots.classList.add("slow");
       }
-    }
+    },5000);
 
-    // Enter = senden, Shift+Enter = Zeilenumbruch
-    qEl.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        ask();
-      }
+  },500);
+
+  try{
+    const res=await fetch(WORKER_URL,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(payload)
     });
 
-    sendEl.addEventListener("click", ask);
-    resetEl.addEventListener("click", boot);
+    const data=await res.json();
+    const reply=data?.reply||"Keine Antwort erhalten.";
 
-    // Auto-Reset beim Neuladen
-    window.addEventListener("load", boot);
-  </script>
+    clearTimeout(thinkingTimer);
+    if(thinkingDiv) thinkingDiv.remove();
+
+    addMsg("assistant","Physikus",reply);
+    messages.push({role:"assistant",content:reply});
+
+  }catch{
+    clearTimeout(thinkingTimer);
+    if(thinkingDiv) thinkingDiv.remove();
+    addMsg("assistant","Physikus","Fehler beim Verbinden.");
+  }
+
+  sendEl.disabled=false;
+  qEl.focus();
+}
+
+/* --- Enter send / Shift+Enter newline --- */
+qEl.addEventListener("keydown",(e)=>{
+  if(e.key==="Enter" && !e.shiftKey){
+    e.preventDefault();
+    ask();
+  }
+});
+
+sendEl.onclick=ask;
+resetEl.onclick=boot;
+window.onload=boot;
+</script>
+
 </body>
 </html>
