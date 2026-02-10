@@ -42,23 +42,16 @@
       border-bottom: 1px solid var(--stroke);
     }
 
-    .brand{
-      display:flex;
-      align-items:baseline;
-      gap:10px;
-    }
-    .brand .title{ font-weight: 800; letter-spacing: .2px; }
+    .brand .title{ font-weight: 800; }
 
     .btn{
       border: 1px solid var(--stroke);
       background: #fff;
-      color: var(--ink);
       border-radius: 12px;
       padding: 8px 10px;
       cursor:pointer;
       font-size: 14px;
     }
-    .btn:hover{ box-shadow: 0 6px 16px rgba(0,0,0,.08); }
 
     .panel{
       flex:1;
@@ -77,56 +70,56 @@
       box-shadow: var(--shadow);
       padding: 10px;
       overflow:auto;
-      -webkit-overflow-scrolling: touch;
       min-height:0;
     }
 
     .msg{ margin: 10px 0; }
-    .who{ font-weight: 700; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+    .who{ font-weight:700; font-size:12px; color:var(--muted); margin-bottom:4px; }
     .bubble{
       display:inline-block;
-      padding: 10px 12px;
-      border-radius: 14px;
-      border: 1px solid rgba(0,0,0,.06);
-      white-space: pre-wrap;
-      line-height: 1.35;
-      max-width: 980px;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid rgba(0,0,0,.06);
+      white-space:pre-wrap;
+      line-height:1.35;
+      max-width:980px;
     }
-    .me .bubble{ background: var(--bubbleMe); }
-    .bot .bubble{ background: var(--bubbleBot); }
+    .me .bubble{ background:var(--bubbleMe); }
+    .bot .bubble{ background:var(--bubbleBot); }
 
     .composer{
       display:flex;
       gap:10px;
-      align-items:stretch;
     }
 
-    .input{
+    textarea.input{
       flex:1;
-      background: var(--card);
-      border: 1px solid var(--stroke);
-      border-radius: 14px;
-      padding: 10px 12px;
-      font-size: 16px;
+      background:var(--card);
+      border:1px solid var(--stroke);
+      border-radius:14px;
+      padding:10px 12px;
+      font-size:16px;
+      resize:none;
       outline:none;
+      min-height:44px;
+      line-height:1.35;
     }
 
     .send{
       border:none;
-      background: var(--accent);
+      background:var(--accent);
       color:#fff;
-      border-radius: 14px;
-      padding: 10px 14px;
+      border-radius:14px;
+      padding:10px 14px;
       cursor:pointer;
-      font-size: 16px;
-      min-width: 110px;
+      font-size:16px;
+      min-width:110px;
     }
-    .send:disabled{ opacity:.65; cursor: default; }
+    .send:disabled{ opacity:.65; }
 
     .hint{
-      font-size: 12px;
-      color: var(--muted);
-      padding: 0 2px;
+      font-size:12px;
+      color:var(--muted);
     }
   </style>
 </head>
@@ -143,12 +136,12 @@
       <div id="chat" class="chat" aria-live="polite"></div>
 
       <div class="composer">
-        <input id="q" class="input" placeholder="Frage stellen…" />
+        <textarea id="q" class="input" placeholder="Frage stellen…"></textarea>
         <button id="send" class="send">Senden</button>
       </div>
 
       <div class="hint">
-        Tipp: Wenn du die volle Lösung möchtest, schreib am Ende: <b>„weiter“</b> oder <b>„zeige Lösung“</b>.
+        Enter = Senden · Shift+Enter = neue Zeile
       </div>
     </div>
   </div>
@@ -186,6 +179,7 @@
       const hello = "Hallo! Ich bin Physikus. Stell mir eine Frage zu Naturwissenschaften oder Mathe.";
       addMsg("assistant", "Physikus", hello);
       messages.push({ role: "assistant", content: hello });
+      qEl.value = "";
       qEl.focus();
     }
 
@@ -198,21 +192,18 @@
       messages.push({ role: "user", content: text });
 
       const payload = { messages: messages.slice(-12) };
-
       sendEl.disabled = true;
 
-      /* ===== Wartetext einfügen ===== */
       const thinkingId = "thinking-" + Date.now();
       const thinkingDiv = document.createElement("div");
       thinkingDiv.className = "msg bot";
       thinkingDiv.id = thinkingId;
       thinkingDiv.innerHTML = `
         <div class="who">Physikus</div>
-        <div class="bubble">⏳ Ich überlege kurz… (nutze die Zeit: Was weisst du noch zum Thema? Was ist gegeben? Was ist gesucht?)</div>
+        <div class="bubble">⏳ Ich überlege kurz…</div>
       `;
       chatEl.appendChild(thinkingDiv);
       chatEl.scrollTop = chatEl.scrollHeight;
-      /* ============================== */
 
       try{
         const res = await fetch(WORKER_URL, {
@@ -220,35 +211,35 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload)
         });
-
         const data = await res.json();
-        const reply = data.reply || "Keine Antwort erhalten.";
+        const reply = data?.reply || "Keine Antwort erhalten.";
 
-        /* Wartetext entfernen */
-        const td = document.getElementById(thinkingId);
-        if (td) td.remove();
-
+        document.getElementById(thinkingId)?.remove();
         addMsg("assistant", "Physikus", reply);
         messages.push({ role: "assistant", content: reply });
 
-      } catch(e){
-        const td = document.getElementById(thinkingId);
-        if (td) td.remove();
-
-        const err = "Fehler beim Verbinden (Worker/CORS).";
-        addMsg("assistant", "Physikus", err);
-        messages.push({ role: "assistant", content: err });
+      } catch {
+        document.getElementById(thinkingId)?.remove();
+        addMsg("assistant", "Physikus", "Fehler beim Verbinden (Worker/CORS).");
       } finally{
         sendEl.disabled = false;
         qEl.focus();
       }
     }
 
+    // Enter = senden, Shift+Enter = Zeilenumbruch
+    qEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        ask();
+      }
+    });
+
     sendEl.addEventListener("click", ask);
-    qEl.addEventListener("keydown", (e) => { if(e.key === "Enter") ask(); });
     resetEl.addEventListener("click", boot);
 
-    boot();
+    // Auto-Reset beim Neuladen
+    window.addEventListener("load", boot);
   </script>
 </body>
 </html>
