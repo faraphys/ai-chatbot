@@ -12,11 +12,12 @@
 
 <style>
 :root{
-  --bg:#f4f6fb;
-  --card:#ffffff;
+  --bg:#f4f6fb;              /* page background */
+  --card:#ffffff;            /* card */
   --ink:#0a2a43;
   --muted:#5b6a78;
-  --accent:#2b8cff;
+  --accent:#2b8cff;          /* title bar blue */
+  --chatbg:#eef2f7;          /* grey chat area background */
   --bubbleMe:#eef6ff;
   --bubbleBot:#f7fbf7;
   --stroke:rgba(0,0,0,.10);
@@ -24,84 +25,100 @@
   --radius:16px;
 }
 
-html,body{height:100%;}
+html,body{height:100%; margin:0;}
 body{
-  margin:0;
   font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
   background:var(--bg);
   color:var(--ink);
 }
 
-/* Layout */
-
+/* Full-height app */
 .wrap{
   height:100vh;
   display:flex;
   flex-direction:column;
-}
-
-.panel{
-  flex:1;
-  display:flex;
-  flex-direction:column;
   padding:10px 12px;
-  gap:10px;
+  box-sizing:border-box;
   min-height:0;
 }
 
-/* Chat Card */
-
+/* Chat card */
 .chat{
   flex:1;
+  min-height:0;
   background:var(--card);
   border:1px solid var(--stroke);
   border-radius:var(--radius);
   box-shadow:var(--shadow);
+  overflow:hidden;
+
   display:flex;
   flex-direction:column;
-  overflow:hidden;
 }
 
-/* ===== Header (Reset + Close) ===== */
-
-.chatHeader{
-  display:flex;
-  justify-content:flex-end;
-  gap:8px;
-  padding:6px 8px;
-  border-bottom:1px solid var(--stroke);
-  background:var(--card);
-}
-
-.headerBtn{
-  width:40px;
-  height:40px;
-  border-radius:10px;
-  border:1px solid rgba(0,0,0,.12);
-  background:rgba(255,255,255,.85);
-  cursor:pointer;
-  font-size:16px;
+/* ===== Single blue title bar (no extra white strip) ===== */
+.titlebar{
   display:flex;
   align-items:center;
-  justify-content:center;
+  justify-content:space-between;
+  padding:8px 10px;
+  background:var(--accent);
+  color:#fff;
 }
 
-.headerBtn:hover{
-  background:white;
+.titleLeft{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-weight:800;
+  letter-spacing:.2px;
 }
 
-/* Chat Scroll Area */
+.titleLeft .tag{
+  font-weight:600;
+  opacity:.9;
+  font-size:12px;
+}
 
+.titleActions{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+.resetBtn{
+  height:34px;
+  padding:0 10px;
+  border-radius:10px;
+  border:1px solid rgba(255,255,255,.35);
+  background:rgba(255,255,255,.14);
+  color:#fff;
+  cursor:pointer;
+  font-size:13px;
+  font-weight:700;
+
+  display:flex;
+  align-items:center;
+  gap:8px;
+  user-select:none;
+}
+.resetBtn:hover{
+  background:rgba(255,255,255,.22);
+}
+
+/* Scroll area of chat messages */
 .chatBody{
   flex:1;
+  min-height:0;
   overflow:auto;
   padding:10px;
+  background:var(--chatbg);
 }
 
+/* Message bubbles */
 .msg{margin:10px 0;}
-
 .who{
-  font-weight:700;
+  font-weight:800;
   font-size:11px;
   color:var(--muted);
   margin-bottom:4px;
@@ -117,23 +134,31 @@ body{
   line-height:1.35;
   font-size:14px;
   max-width:900px;
+  background:#fff;
 }
 
-.me .bubble{background:var(--bubbleMe);}
-.bot .bubble{background:var(--bubbleBot);}
+.me .bubble{ background:var(--bubbleMe); }
+.bot .bubble{ background:var(--bubbleBot); }
 
-/* Composer */
+/* Footer (composer + hint) stays visible */
+.footer{
+  border-top:1px solid var(--stroke);
+  background:var(--card);
+  padding:10px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
 
 .composer{
   display:flex;
   gap:10px;
-  padding:10px;
-  border-top:1px solid var(--stroke);
+  align-items:stretch;
 }
 
 textarea.input{
   flex:1;
-  background:var(--card);
+  background:#fff;
   border:1px solid var(--stroke);
   border-radius:14px;
   padding:10px 12px;
@@ -141,6 +166,7 @@ textarea.input{
   outline:none;
   resize:none;
   min-height:44px;
+  line-height:1.35;
 }
 
 .send{
@@ -153,46 +179,40 @@ textarea.input{
   font-size:15px;
   min-width:110px;
 }
-
-.send:disabled{opacity:.65;}
+.send:disabled{opacity:.65; cursor:default;}
 
 .hint{
   font-size:12px;
   color:var(--muted);
-  padding:0 10px 10px 10px;
+  line-height:1.25;
 }
 
-/* Thinking dots */
-
+/* Thinking dots (no box) */
 .thinkingLine{
   font-size:20px;
+  line-height:1;
   color:rgba(91,106,120,0.9);
-  padding-left:4px;
+  padding:2px 0 0 2px;
+  user-select:none;
 }
-
-.thinkingDots{
-  display:inline-block;
-  width:3ch;
-}
-
+.thinkingDots{ display:inline-block; width:3ch; }
 .thinkingDots::before{
   content:"...";
   animation:pulse 1.1s ease-in-out infinite;
 }
-
+.thinkingDots.slow::before{ animation-duration:2s; }
 @keyframes pulse{
   0%,100%{opacity:.25;}
   50%{opacity:.95;}
 }
 
-/* Copy Button */
-
+/* Copy button */
 .copyBtn{
   position:absolute;
   top:6px;
   right:6px;
   border:1px solid rgba(0,0,0,.12);
-  background:rgba(255,255,255,.7);
+  background:rgba(255,255,255,.75);
   border-radius:8px;
   padding:4px 6px;
   font-size:11px;
@@ -200,171 +220,182 @@ textarea.input{
   opacity:0;
   transition:opacity .2s;
 }
+.bubble:hover .copyBtn{opacity:.92;}
 
-.bubble:hover .copyBtn{opacity:.9;}
-
+/* KaTeX blending */
+.bubble .katex{ font-size:1.02em; color:inherit; }
+.bubble .katex-display{ margin:.45em 0 .35em 0; }
 </style>
 </head>
 
 <body>
 <div class="wrap">
 
-<div class="panel">
-
   <div class="chat">
 
-    <!-- HEADER -->
-    <div class="chatHeader">
-      <button id="reset" class="headerBtn">↺</button>
-      <button class="headerBtn" onclick="window.parent?.postMessage('physikus-close','*')">✕</button>
+    <!-- Single blue title bar -->
+    <div class="titlebar">
+      <div class="titleLeft">
+        <span>Physikus</span>
+        <span class="tag">🤓</span>
+      </div>
+
+      <div class="titleActions">
+        <button id="reset" class="resetBtn" type="button" title="Zurücksetzen">
+          ↺ <span>Zurücksetzen</span>
+        </button>
+      </div>
     </div>
 
-    <div id="chatBody" class="chatBody"></div>
+    <!-- Messages -->
+    <div id="chatBody" class="chatBody" aria-live="polite"></div>
 
-    <div class="composer">
-      <textarea id="q" class="input" placeholder="Frage stellen…"></textarea>
-      <button id="send" class="send">Senden</button>
-    </div>
-
-    <div class="hint">
-      Enter = Senden · Shift+Enter = neue Zeile
+    <!-- Footer stays visible -->
+    <div class="footer">
+      <div class="composer">
+        <textarea id="q" class="input" placeholder="Frage stellen…"></textarea>
+        <button id="send" class="send" type="button">Senden</button>
+      </div>
+      <div class="hint">Enter = Senden · Shift+Enter = neue Zeile</div>
     </div>
 
   </div>
 
 </div>
-</div>
 
 <script>
-const WORKER_URL="https://ai-chat-app.raphaerber.workers.dev/api/chat";
+const WORKER_URL = "https://ai-chat-app.raphaerber.workers.dev/api/chat";
 
-const chatEl=document.getElementById("chatBody");
-const qEl=document.getElementById("q");
-const sendEl=document.getElementById("send");
-const resetEl=document.getElementById("reset");
+const chatEl  = document.getElementById("chatBody");
+const qEl     = document.getElementById("q");
+const sendEl  = document.getElementById("send");
+const resetEl = document.getElementById("reset");
 
-let messages=[];
+let messages = [];
 
 function escapeHtml(s){
- return String(s).replace(/[&<>"']/g,m=>({
-  "&":"&amp;",
-  "<":"&lt;",
-  ">":"&gt;",
-  '"':"&quot;",
-  "'":"&#39;"
- }[m]));
+  return String(s).replace(/[&<>"']/g, m => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[m]));
 }
 
 function renderMath(el){
- if(window.renderMathInElement){
-   renderMathInElement(el,{
-     delimiters:[
-       {left:"$$",right:"$$",display:true},
-       {left:"\\(",right:"\\)",display:false},
-       {left:"$",right:"$",display:false}
-     ],
-     throwOnError:false
-   });
- }
+  if (!window.renderMathInElement) return;
+  renderMathInElement(el, {
+    delimiters: [
+      { left:"$$", right:"$$", display:true },
+      { left:"\\[", right:"\\]", display:true },
+      { left:"\\(", right:"\\)", display:false },
+      { left:"$", right:"$", display:false }
+    ],
+    throwOnError: false
+  });
 }
 
-function addMsg(role,who,text){
+function addMsg(role, who, text){
+  const msg = document.createElement("div");
+  msg.className = "msg " + (role === "user" ? "me" : "bot");
 
- const msg=document.createElement("div");
- msg.className="msg "+(role==="user"?"me":"bot");
+  const whoEl = document.createElement("div");
+  whoEl.className = "who";
+  whoEl.textContent = who;
 
- const whoEl=document.createElement("div");
- whoEl.className="who";
- whoEl.textContent=who;
+  const bubble = document.createElement("div");
+  bubble.className = "bubble";
 
- const bubble=document.createElement("div");
- bubble.className="bubble";
+  const copyBtn = document.createElement("button");
+  copyBtn.className = "copyBtn";
+  copyBtn.type = "button";
+  copyBtn.textContent = "Copy";
+  copyBtn.onclick = () => navigator.clipboard?.writeText(text).catch(()=>{});
+  bubble.appendChild(copyBtn);
 
- const copyBtn=document.createElement("button");
- copyBtn.className="copyBtn";
- copyBtn.textContent="Copy";
- copyBtn.onclick=()=>navigator.clipboard.writeText(text);
+  bubble.innerHTML += escapeHtml(text);
 
- bubble.appendChild(copyBtn);
- bubble.innerHTML+=escapeHtml(text);
+  msg.appendChild(whoEl);
+  msg.appendChild(bubble);
 
- msg.appendChild(whoEl);
- msg.appendChild(bubble);
+  chatEl.appendChild(msg);
+  chatEl.scrollTop = chatEl.scrollHeight;
 
- chatEl.appendChild(msg);
- chatEl.scrollTop=chatEl.scrollHeight;
-
- renderMath(bubble);
+  renderMath(bubble);
 }
 
-function addThinking(){
- const d=document.createElement("div");
- d.className="thinkingLine";
- d.innerHTML='<span class="thinkingDots"></span>';
- chatEl.appendChild(d);
- chatEl.scrollTop=chatEl.scrollHeight;
- return d;
+function addThinkingLine(){
+  const div = document.createElement("div");
+  div.className = "thinkingLine";
+  div.innerHTML = `<span class="thinkingDots"></span>`;
+  chatEl.appendChild(div);
+  chatEl.scrollTop = chatEl.scrollHeight;
+  return div;
 }
 
 function boot(){
- messages=[];
- chatEl.innerHTML="";
- const hello="Hallo! Ich bin Physikus 🤓. Welche Frage hast du?";
- addMsg("assistant","Physikus",hello);
- messages.push({role:"assistant",content:hello});
+  messages = [];
+  chatEl.innerHTML = "";
+  const hello = "Hallo! Ich bin Physikus 🤓. Welche Frage hast du?";
+  addMsg("assistant", "Physikus", hello);
+  messages.push({ role:"assistant", content: hello });
+  qEl.value = "";
+  qEl.focus();
 }
 
 async function ask(){
+  const text = qEl.value.trim();
+  if (!text) return;
 
- const text=qEl.value.trim();
- if(!text) return;
+  qEl.value = "";
+  addMsg("user", "Du", text);
+  messages.push({ role:"user", content: text });
 
- qEl.value="";
- addMsg("user","Du",text);
- messages.push({role:"user",content:text});
+  sendEl.disabled = true;
 
- sendEl.disabled=true;
+  let thinkingDiv = null;
+  const timer = setTimeout(() => {
+    thinkingDiv = addThinkingLine();
+    const dotsEl = thinkingDiv.querySelector(".thinkingDots");
+    setTimeout(() => { if (dotsEl) dotsEl.classList.add("slow"); }, 5000);
+  }, 500);
 
- let thinking;
- const timer=setTimeout(()=>thinking=addThinking(),500);
+  try{
+    const res = await fetch(WORKER_URL, {
+      method: "POST",
+      headers: { "Content-Type":"application/json" },
+      body: JSON.stringify({ messages: messages.slice(-12) })
+    });
 
- try{
+    const data = await res.json();
+    const reply = data?.reply || "Keine Antwort erhalten.";
 
- const res=await fetch(WORKER_URL,{
-   method:"POST",
-   headers:{"Content-Type":"application/json"},
-   body:JSON.stringify({messages:messages.slice(-12)})
- });
+    clearTimeout(timer);
+    if (thinkingDiv) thinkingDiv.remove();
 
- const data=await res.json();
- const reply=data?.reply || "Keine Antwort erhalten.";
+    addMsg("assistant", "Physikus", reply);
+    messages.push({ role:"assistant", content: reply });
 
- clearTimeout(timer);
- if(thinking) thinking.remove();
+  } catch(e){
+    clearTimeout(timer);
+    if (thinkingDiv) thinkingDiv.remove();
 
- addMsg("assistant","Physikus",reply);
- messages.push({role:"assistant",content:reply});
-
- }catch(e){
- addMsg("assistant","Physikus","Verbindungsfehler.");
- }
-
- sendEl.disabled=false;
- qEl.focus();
+    addMsg("assistant", "Physikus", "Verbindungsfehler.");
+    messages.push({ role:"assistant", content: "Verbindungsfehler." });
+  } finally{
+    sendEl.disabled = false;
+    qEl.focus();
+  }
 }
 
-sendEl.onclick=ask;
-
-qEl.addEventListener("keydown",e=>{
- if(e.key==="Enter" && !e.shiftKey){
-  e.preventDefault();
-  ask();
- }
+// Enter = send, Shift+Enter = newline
+qEl.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    ask();
+  }
 });
+sendEl.addEventListener("click", ask);
+resetEl.addEventListener("click", boot);
 
-resetEl.onclick=boot;
-
-window.onload=boot;
+window.addEventListener("load", boot);
 </script>
 </body>
 </html>
