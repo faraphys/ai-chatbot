@@ -1,173 +1,392 @@
 <!doctype html>
 <html lang="de">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Physikus</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Physikus</title>
 
-<script>
-window.MathJax = {
-  tex: {
-    inlineMath: [['\\(', '\\)']],
-    displayMath: [['$$', '$$']]
-  }
-};
-</script>
-<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <!-- MathJax -->
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['\\(', '\\)'], ['$', '$']],
+        displayMath: [['$$', '$$']]
+      },
+      options: { skipHtmlTags: ['script','noscript','style','textarea','pre'] }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
-<style>
-body{
-  margin:0;
-  font-family:system-ui;
-  background:#f4f6fb;
-}
+  <style>
+    :root{
+      --bg:#f4f6fb;
+      --card:#ffffff;
+      --ink:#0a2a43;
+      --muted:#5b6a78;
+      --accent:#2b8cff;
+      --bubbleMe:#eef6ff;
+      --bubbleBot:#f7fbf7;
+      --stroke:rgba(0,0,0,.10);
+      --shadow: 0 10px 28px rgba(0,0,0,.10);
+      --radius: 16px;
+    }
 
-.wrap{
-  height:100vh;
-  display:flex;
-  flex-direction:column;
-}
+    html, body { height: 100%; }
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--ink);
+      overflow: hidden; /* avoids outer scrollbars */
+    }
 
-.topbar{
-  display:flex;
-  justify-content:space-between;
-  padding:10px 12px;
-  background:white;
-  border-bottom:1px solid #ddd;
-}
+    /* ===== nicer scrollbars (only where scroll exists) ===== */
+    .chat::-webkit-scrollbar{ width: 10px; }
+    .chat::-webkit-scrollbar-track{ background: transparent; }
+    .chat::-webkit-scrollbar-thumb{
+      background: rgba(91,106,120,0.25);
+      border-radius: 999px;
+      border: 2px solid transparent;
+      background-clip: padding-box;
+    }
+    .chat::-webkit-scrollbar-thumb:hover{
+      background: rgba(91,106,120,0.38);
+      border: 2px solid transparent;
+      background-clip: padding-box;
+    }
 
-.controls{
-  display:flex;
-  align-items:center;
-  gap:8px;
-}
+    /* iframe/slides-friendly */
+    .wrap{
+      height: 100vh;
+      display:flex;
+      flex-direction:column;
+      min-height:0;
+    }
 
-.chat{
-  flex:1;
-  padding:10px;
-  overflow:auto;
-  background:white;
-}
+    /* ===== Topbar ===== */
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding: 10px 12px;
+      background: var(--card);
+      border-bottom: 1px solid var(--stroke);
+      flex: 0 0 auto;
+    }
 
-.bubble{
-  background:#eef6ff;
-  padding:10px;
-  border-radius:12px;
-  margin:6px 0;
-}
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-width: 0;
+    }
+    .brand .title{
+      font-weight: 900;
+      letter-spacing: .2px;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      white-space: nowrap;
+    }
+    .brand .tag{
+      font-size:12px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
 
-textarea{
-  width:100%;
-  padding:10px;
-}
-</style>
+    .controls{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex: 0 0 auto;
+    }
+
+    .label{
+      font-size: 12px;
+      color: var(--muted);
+      margin-right: 2px;
+      user-select: none;
+      white-space: nowrap;
+    }
+
+    .select{
+      border: 1px solid var(--stroke);
+      background: #fff;
+      color: var(--ink);
+      border-radius: 12px;
+      padding: 8px 10px;
+      font-size: 14px;
+      cursor:pointer;
+      outline:none;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+    }
+    .select:disabled{
+      opacity: .65;
+      cursor: not-allowed;
+    }
+
+    .btn{
+      border: 1px solid var(--stroke);
+      background: #fff;
+      color: var(--ink);
+      border-radius: 12px;
+      padding: 8px 10px;
+      cursor:pointer;
+      font-size: 14px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+      display:flex;
+      align-items:center;
+      gap:8px;
+      white-space: nowrap;
+    }
+    .btn:hover{ box-shadow: 0 6px 18px rgba(0,0,0,.08); transform: translateY(-1px); }
+    .btn:active{ transform: translateY(0); }
+
+    /* ===== Panel ===== */
+    .panel{
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      padding: 10px 12px;
+      gap:10px;
+      min-height:0; /* needed so chat scroll works without page scroll */
+    }
+
+    .chat{
+      flex:1;
+      background: var(--card);
+      border: 1px solid var(--stroke);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 10px;
+      overflow:auto;
+      -webkit-overflow-scrolling: touch;
+      min-height:0;
+    }
+
+    .msg{ margin: 10px 0; }
+    .who{
+      font-weight: 700;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 4px;
+    }
+    .bubble{
+      display:inline-block;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(0,0,0,.06);
+      white-space: pre-wrap;
+      line-height: 1.35;
+      max-width: 980px;
+    }
+    .me .bubble{ background: var(--bubbleMe); }
+    .bot .bubble{ background: var(--bubbleBot); }
+
+    .composer{
+      display:flex;
+      gap:10px;
+      align-items:stretch;
+      flex: 0 0 auto;
+    }
+
+    textarea.input{
+      flex:1;
+      background: var(--card);
+      border: 1px solid var(--stroke);
+      border-radius: 14px;
+      padding: 10px 12px;
+      font-size: 16px;
+      outline:none;
+      resize:none;
+      min-height:44px;
+      line-height:1.35;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.04);
+    }
+
+    .send{
+      border:none;
+      background: var(--accent);
+      color:#fff;
+      border-radius: 14px;
+      padding: 10px 14px;
+      cursor:pointer;
+      font-size: 16px;
+      min-width: 110px;
+      box-shadow: 0 10px 22px rgba(43,140,255,0.25);
+    }
+    .send:hover{ filter: brightness(1.02); transform: translateY(-1px); }
+    .send:active{ transform: translateY(0); }
+    .send:disabled{ opacity:.65; cursor: default; box-shadow:none; }
+
+    .hint{
+      font-size: 12px;
+      color: var(--muted);
+      padding: 0 2px;
+      flex: 0 0 auto;
+    }
+
+    /* Mobile polish */
+    @media (max-width: 520px){
+      .send{ min-width: 92px; }
+      textarea.input{ font-size: 15px; }
+      .brand .tag{ display:none; }
+    }
+  </style>
 </head>
 
 <body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <div class="title">🤓 Physikus</div>
+        <div class="tag">Physik · Mathe · Naturwissenschaften</div>
+      </div>
 
-<div class="wrap">
+      <div class="controls">
+        <span class="label">Nerd-Level</span>
+        <select id="nerd" class="select" title="Nerd-Level">
+          <option value="tief">tief</option>
+          <option value="mittel" selected>mittel</option>
+          <option value="hoch">hoch</option>
+        </select>
 
-<div class="topbar">
-  <b>Physikus</b>
+        <button id="reset" class="btn" title="Zurücksetzen">↺ <span>Zurücksetzen</span></button>
+      </div>
+    </div>
 
-  <div class="controls">
-    <span>Nerd-Level</span>
+    <div class="panel">
+      <div id="chat" class="chat" aria-live="polite"></div>
 
-    <select id="nerd">
-      <option value="tief">tief</option>
-      <option value="mittel" selected>mittel</option>
-      <option value="hoch">hoch</option>
-    </select>
+      <div class="composer">
+        <textarea id="q" class="input" placeholder="Frage stellen…"></textarea>
+        <button id="send" class="send">Senden</button>
+      </div>
 
-    <button id="reset">↺ Zurücksetzen</button>
+      <div class="hint">Enter = Senden · Shift+Enter = neue Zeile</div>
+    </div>
   </div>
-</div>
 
-<div id="chat" class="chat"></div>
-<textarea id="q" placeholder="Frage stellen…"></textarea>
+  <script>
+    const WORKER_URL = "https://ai-chat-app.raphaerber.workers.dev/api/chat";
 
-</div>
+    const chatEl  = document.getElementById("chat");
+    const qEl     = document.getElementById("q");
+    const sendEl  = document.getElementById("send");
+    const resetEl = document.getElementById("reset");
+    const nerdEl  = document.getElementById("nerd");
 
-<script>
+    let messages = [];
 
-const WORKER_URL="https://ai-chat-app.raphaerber.workers.dev/api/chat";
+    function escapeHtml(s){
+      return String(s).replace(/[&<>"']/g, m => ({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+      }[m]));
+    }
 
-const chatEl=document.getElementById("chat");
-const qEl=document.getElementById("q");
-const nerdEl=document.getElementById("nerd");
+    function addMsg(role, who, text){
+      const div = document.createElement("div");
+      div.className = "msg " + (role === "user" ? "me" : "bot");
+      div.innerHTML = `
+        <div class="who">${escapeHtml(who)}</div>
+        <div class="bubble">${escapeHtml(text)}</div>
+      `;
+      chatEl.appendChild(div);
+      chatEl.scrollTop = chatEl.scrollHeight;
 
-let messages=[];
+      // MathJax
+      if (window.MathJax && window.MathJax.typesetPromise) {
+        MathJax.typesetPromise([div]).catch(() => {});
+      }
+    }
 
-// -------- URL Override ----------
-function getParam(name){
-  return new URLSearchParams(location.search).get(name);
-}
+    // ---------- URL override: ?level=tief|mittel|hoch & lock=1 ----------
+    function getParam(name){
+      return new URLSearchParams(location.search).get(name);
+    }
 
-const forcedLevel=getParam("level");
-const lock=getParam("lock");
+    function applyNerdLevelFromUrlOrStorage(){
+      const forced = (getParam("level") || "").toLowerCase();
+      const lock = getParam("lock");
 
-if(["tief","mittel","hoch"].includes(forcedLevel)){
-  nerdEl.value=forcedLevel;
-  localStorage.setItem("physikus_nerdLevel",forcedLevel);
-}
+      if (["tief","mittel","hoch"].includes(forced)) {
+        nerdEl.value = forced;
+        localStorage.setItem("physikus_nerdLevel", forced);
+        if (lock === "1") nerdEl.disabled = true;
+        return;
+      }
 
-if(lock==="1" && forcedLevel){
-  nerdEl.disabled=true;
-}
+      const saved = localStorage.getItem("physikus_nerdLevel");
+      if (saved && ["tief","mittel","hoch"].includes(saved)) nerdEl.value = saved;
+    }
 
-// ---------- Persist ----------
-const saved=localStorage.getItem("physikus_nerdLevel");
-if(saved && !forcedLevel){
-  nerdEl.value=saved;
-}
+    nerdEl.addEventListener("change", () => {
+      localStorage.setItem("physikus_nerdLevel", nerdEl.value);
+    });
 
-nerdEl.addEventListener("change",()=>{
-  localStorage.setItem("physikus_nerdLevel",nerdEl.value);
-});
+    function boot(){
+      messages = [];
+      chatEl.innerHTML = "";
+      const hello = "Hallo! Ich bin Physikus 🤓";
+      addMsg("assistant", "Physikus", hello);
+      messages.push({ role: "assistant", content: hello });
+      qEl.value = "";
+      qEl.focus();
+    }
 
-function addMsg(text){
-  const div=document.createElement("div");
-  div.className="bubble";
-  div.textContent=text;
-  chatEl.appendChild(div);
-  MathJax.typesetPromise([div]);
-}
+    async function ask(){
+      const text = qEl.value.trim();
+      if (!text) return;
 
-async function ask(){
-  const text=qEl.value.trim();
-  if(!text) return;
+      qEl.value = "";
+      addMsg("user", "Du", text);
+      messages.push({ role: "user", content: text });
 
-  addMsg("Du: "+text);
-  messages.push({role:"user",content:text});
-  qEl.value="";
+      sendEl.disabled = true;
 
-  const res=await fetch(WORKER_URL,{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({
-      nerdLevel: nerdEl.value,
-      messages
-    })
-  });
+      try{
+        const res = await fetch(WORKER_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            nerdLevel: nerdEl.value,
+            messages: messages.slice(-12)
+          })
+        });
 
-  const data=await res.json();
-  addMsg("Physikus: "+data.reply);
-  messages.push({role:"assistant",content:data.reply});
-}
+        const data = await res.json();
+        const reply = data?.reply || "Keine Antwort erhalten.";
+        addMsg("assistant", "Physikus", reply);
+        messages.push({ role: "assistant", content: reply });
 
-qEl.addEventListener("keydown",e=>{
-  if(e.key==="Enter"){
-    e.preventDefault();
-    ask();
-  }
-});
+      } catch(e){
+        const err = "Fehler beim Verbinden (Worker/CORS).";
+        addMsg("assistant", "Physikus", err);
+        messages.push({ role: "assistant", content: err });
+      } finally{
+        sendEl.disabled = false;
+        qEl.focus();
+      }
+    }
 
-document.getElementById("reset").onclick=()=>{
-  messages=[];
-  chatEl.innerHTML="";
-};
+    // Enter = send, Shift+Enter = newline
+    qEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        ask();
+      }
+    });
 
-</script>
+    sendEl.addEventListener("click", ask);
+    resetEl.addEventListener("click", boot);
 
+    window.addEventListener("load", () => {
+      applyNerdLevelFromUrlOrStorage();
+      boot();
+    });
+  </script>
 </body>
 </html>
