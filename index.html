@@ -32,40 +32,13 @@ body{
   color:var(--ink);
 }
 
-/* ===== Layout ===== */
+/* Layout */
 
 .wrap{
   height:100vh;
   display:flex;
   flex-direction:column;
 }
-
-/* Neue minimalistische Titelzeile */
-.titlebar{
-  display:flex;
-  justify-content:flex-end;
-  align-items:center;
-  padding:8px 10px;
-  background:var(--card);
-  border-bottom:1px solid var(--stroke);
-}
-
-/* Reset Button oben rechts */
-.resetBtn{
-  border:1px solid var(--stroke);
-  background:#fff;
-  border-radius:10px;
-  padding:6px 10px;
-  cursor:pointer;
-  font-size:13px;
-  color:var(--muted);
-}
-
-.resetBtn:hover{
-  background:#f2f6ff;
-}
-
-/* ===== Chat Panel ===== */
 
 .panel{
   flex:1;
@@ -76,17 +49,57 @@ body{
   min-height:0;
 }
 
+/* Chat Card */
+
 .chat{
   flex:1;
   background:var(--card);
   border:1px solid var(--stroke);
   border-radius:var(--radius);
   box-shadow:var(--shadow);
-  padding:10px;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+
+/* ===== Header (Reset + Close) ===== */
+
+.chatHeader{
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+  padding:6px 8px;
+  border-bottom:1px solid var(--stroke);
+  background:var(--card);
+}
+
+.headerBtn{
+  width:40px;
+  height:40px;
+  border-radius:10px;
+  border:1px solid rgba(0,0,0,.12);
+  background:rgba(255,255,255,.85);
+  cursor:pointer;
+  font-size:16px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.headerBtn:hover{
+  background:white;
+}
+
+/* Chat Scroll Area */
+
+.chatBody{
+  flex:1;
   overflow:auto;
+  padding:10px;
 }
 
 .msg{margin:10px 0;}
+
 .who{
   font-weight:700;
   font-size:11px;
@@ -109,11 +122,13 @@ body{
 .me .bubble{background:var(--bubbleMe);}
 .bot .bubble{background:var(--bubbleBot);}
 
-/* ===== Input ===== */
+/* Composer */
 
 .composer{
   display:flex;
   gap:10px;
+  padding:10px;
+  border-top:1px solid var(--stroke);
 }
 
 textarea.input{
@@ -139,17 +154,15 @@ textarea.input{
   min-width:110px;
 }
 
-.send:disabled{
-  opacity:.65;
-  cursor:default;
-}
+.send:disabled{opacity:.65;}
 
 .hint{
   font-size:12px;
   color:var(--muted);
+  padding:0 10px 10px 10px;
 }
 
-/* ===== Thinking dots ===== */
+/* Thinking dots */
 
 .thinkingLine{
   font-size:20px;
@@ -167,16 +180,12 @@ textarea.input{
   animation:pulse 1.1s ease-in-out infinite;
 }
 
-.thinkingDots.slow::before{
-  animation-duration:2s;
-}
-
 @keyframes pulse{
   0%,100%{opacity:.25;}
   50%{opacity:.95;}
 }
 
-/* ===== Copy Button ===== */
+/* Copy Button */
 
 .copyBtn{
   position:absolute;
@@ -200,14 +209,17 @@ textarea.input{
 <body>
 <div class="wrap">
 
-  <!-- Neue Titelzeile -->
-  <div class="titlebar">
-    <button id="reset" class="resetBtn">Zurücksetzen</button>
-  </div>
+<div class="panel">
 
-  <div class="panel">
+  <div class="chat">
 
-    <div id="chat" class="chat"></div>
+    <!-- HEADER -->
+    <div class="chatHeader">
+      <button id="reset" class="headerBtn">↺</button>
+      <button class="headerBtn" onclick="window.parent?.postMessage('physikus-close','*')">✕</button>
+    </div>
+
+    <div id="chatBody" class="chatBody"></div>
 
     <div class="composer">
       <textarea id="q" class="input" placeholder="Frage stellen…"></textarea>
@@ -219,19 +231,19 @@ textarea.input{
     </div>
 
   </div>
+
+</div>
 </div>
 
 <script>
 const WORKER_URL="https://ai-chat-app.raphaerber.workers.dev/api/chat";
 
-const chatEl=document.getElementById("chat");
+const chatEl=document.getElementById("chatBody");
 const qEl=document.getElementById("q");
 const sendEl=document.getElementById("send");
 const resetEl=document.getElementById("reset");
 
 let messages=[];
-
-/* ===== Helpers ===== */
 
 function escapeHtml(s){
  return String(s).replace(/[&<>"']/g,m=>({
@@ -246,12 +258,12 @@ function escapeHtml(s){
 function renderMath(el){
  if(window.renderMathInElement){
    renderMathInElement(el,{
-    delimiters:[
-      {left:"$$",right:"$$",display:true},
-      {left:"\\(",right:"\\)",display:false},
-      {left:"$",right:"$",display:false}
-    ],
-    throwOnError:false
+     delimiters:[
+       {left:"$$",right:"$$",display:true},
+       {left:"\\(",right:"\\)",display:false},
+       {left:"$",right:"$",display:false}
+     ],
+     throwOnError:false
    });
  }
 }
@@ -302,8 +314,6 @@ function boot(){
  messages.push({role:"assistant",content:hello});
 }
 
-/* ===== Ask ===== */
-
 async function ask(){
 
  const text=qEl.value.trim();
@@ -316,9 +326,7 @@ async function ask(){
  sendEl.disabled=true;
 
  let thinking;
- const timer=setTimeout(()=>{
-   thinking=addThinking();
- },500);
+ const timer=setTimeout(()=>thinking=addThinking(),500);
 
  try{
 
@@ -345,8 +353,6 @@ async function ask(){
  qEl.focus();
 }
 
-/* ===== Events ===== */
-
 sendEl.onclick=ask;
 
 qEl.addEventListener("keydown",e=>{
@@ -359,7 +365,6 @@ qEl.addEventListener("keydown",e=>{
 resetEl.onclick=boot;
 
 window.onload=boot;
-
 </script>
 </body>
 </html>
